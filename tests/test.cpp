@@ -1,62 +1,109 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
-#include <sstream>
-#include <iomanip>
-#include <cmath>
+#include "alarmclock.h"
 
-#include "point.h"
-
-TEST_CASE("Point: Structure definition and initialization") {
-    Point p;
-    REQUIRE(sizeof(p.x) == sizeof(double));
-    REQUIRE(sizeof(p.y) == sizeof(double));
+TEST_CASE("AlarmClock initialization", "[AlarmClock]") {
+    AlarmClock clock;
+    
+    SECTION("Default constructor sets correct initial values") {
+        REQUIRE(clock.getHours() == 0);
+        REQUIRE(clock.getMinutes() == 0);
+        REQUIRE(clock.isActive() == false);
+        REQUIRE(clock.getVolume() == 50);
+        REQUIRE(clock.getMelody() == "Default melody");
+    }
 }
 
-TEST_CASE("Point: Initialization with zeros by default") {
-    Point p;
-    REQUIRE(std::abs(p.x) < 1e-9);  // Check if x is initialized to 0
-    REQUIRE(std::abs(p.y) < 1e-9);  // Check if y is initialized to 0
+TEST_CASE("AlarmClock::setTime()", "[AlarmClock]") {
+    AlarmClock clock;
+    
+    SECTION("Valid time sets correctly") {
+        clock.setTime(7, 30);
+        REQUIRE(clock.getHours() == 7);
+        REQUIRE(clock.getMinutes() == 30);
+    }
+
+    SECTION("Chaining works") {
+        clock.setTime(12, 45)->setTime(8, 15);
+        REQUIRE(clock.getHours() == 8);
+        REQUIRE(clock.getMinutes() == 15);
+    }
 }
 
-TEST_CASE("Square area of rectangle defined by two points") {
-    Point a{1.0, 2.0};
-    Point b{4.0, 6.0};
+TEST_CASE("AlarmClock::turnOn() / turnOff()", "[AlarmClock]") {
+    AlarmClock clock;
+    
+    SECTION("Initially inactive") {
+        REQUIRE(clock.isActive() == false);
+    }
 
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(12.0).epsilon(1e-9));
+    SECTION("Turn on works") {
+        clock.turnOn();
+        REQUIRE(clock.isActive() == true);
+    }
+
+    SECTION("Turn off works") {
+        clock.turnOn();
+        clock.turnOff();
+        REQUIRE(clock.isActive() == false);
+    }
+
+    SECTION("Chaining works") {
+        clock.turnOn()->turnOff()->turnOn();
+        REQUIRE(clock.isActive() == true);
+    }
 }
 
-TEST_CASE("Rectangle area: zero area when points are the same") {
-    Point a{2.5, 3.5};
-    Point b{2.5, 3.5};
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(0.0).epsilon(1e-9));
+TEST_CASE("AlarmClock::setVolume()", "[AlarmClock]") {
+    AlarmClock clock;
+    
+    SECTION("Valid volume sets correctly") {
+        clock.setVolume(80);
+        REQUIRE(clock.getVolume() == 80);
+    }
+
+    SECTION("Volume clamps to 0-100 range") {
+        clock.setVolume(-10);
+        REQUIRE(clock.getVolume() == 0);  
+
+        clock.setVolume(150);
+        REQUIRE(clock.getVolume() == 100); 
+    }
+
+    SECTION("Chaining works") {
+        clock.setVolume(30)->setVolume(70);
+        REQUIRE(clock.getVolume() == 70);
+    }
 }
 
-TEST_CASE("Rectangle area: negative coordinates") {
-    Point a{-2.0, -3.0};
-    Point b{-5.0, -7.0};
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(12.0).epsilon(1e-9));
+TEST_CASE("AlarmClock::setMelody()", "[AlarmClock]") {
+    AlarmClock clock;
+    
+    SECTION("Melody sets correctly") {
+        clock.setMelody("Morning melody");
+        REQUIRE(clock.getMelody() == "Morning melody");
+    }
+
+    SECTION("Chaining works") {
+        clock.setMelody("Beep")->setMelody("Alarm");
+        REQUIRE(clock.getMelody() == "Alarm");
+    }
 }
 
-TEST_CASE("Rectangle area: mixed positive and negative coordinates") {
-    Point a{-1.0, 2.0};
-    Point b{3.0, -2.0};
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(16.0).epsilon(1e-9));
-}
+TEST_CASE("AlarmClock::printStatus()", "[AlarmClock]") {
+    AlarmClock clock;
+    clock.setTime(7, 30)
+         ->setVolume(80)
+         ->turnOn()
+         ->setMelody("Morning melody");
 
-TEST_CASE("Rectangle area: one axis same") {
-    Point a{0.0, 5.0};
-    Point b{10.0, 5.0};
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(0.0).epsilon(1e-9));
-}
+    SECTION("Output matches expected format") {
+        std::ostringstream oss;
+        std::streambuf* oldCout = std::cout.rdbuf(oss.rdbuf());
+        clock.printStatus();
+        std::cout.rdbuf(oldCout);
 
-TEST_CASE("Rectangle area: large values") {
-    Point a{1e6, 2e6};
-    Point b{2e6, 4e6};
-    double area = rectangleSquare(a, b);
-    REQUIRE(area == Approx(2e12).epsilon(1e-3));
+        std::string expected = "Time: 07:30, Volume: 80, Melody: 'Morning melody', Status: ON\n";
+        REQUIRE(oss.str() == expected);
+    }
 }
