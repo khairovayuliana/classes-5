@@ -1,9 +1,13 @@
-// #include <cmath>
+#include "alarmclock.h"
+#include <iostream>
+#include <iomanip>
 
-#include "point.h"
+// your code here
 
-// double rectangleSquare(Point a, Point b) {
-//     double width = std::abs(b.x - a.x);
-//     double height = std::abs(b.y - a.y);
-//     return width * height;
-// }
+// Вывод состояния
+void AlarmClock::printStatus() const {
+    std::cout << "Time: " << std::setw(2) << std::setfill('0') << hours << ":" << std::setw(2)
+              << std::setfill('0') << minutes << ", Volume: " << volume << ", Melody: '" << melody
+              << "'"
+              << ", Status: " << (activeStatus ? "ON" : "OFF") << std::endl;
+}
